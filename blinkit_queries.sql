@@ -1,17 +1,7 @@
--- =====================================================================
--- BLINKIT QUICK-COMMERCE ENTERPRISE ANALYTICS & KPI SUITE
--- Target Engines: MySQL 8.0+ / PostgreSQL / Snowflake / MS SQL Server
--- Description: Advanced analytical queries covering unit economics, 
---              delivery SLA latency, customer RFM, and dark store inventory.
--- =====================================================================
-
 CREATE DATABASE IF NOT EXISTS blinkit_analytics;
 USE blinkit_analytics;
 
--- =====================================================================
--- 1. SCHEMA DEFINITION & CONSTRAINTS
--- =====================================================================
-
+-- 1. RELATIONAL SCHEMA DEFINITIONS
 CREATE TABLE IF NOT EXISTS products (
     product_id INT PRIMARY KEY,
     product_name VARCHAR(255) NOT NULL,
@@ -110,12 +100,7 @@ CREATE TABLE IF NOT EXISTS inventory (
     FOREIGN KEY (product_id) REFERENCES products(product_id)
 );
 
-
--- =====================================================================
--- 2. CORE EXECUTIVE DASHBOARD KPIs
--- =====================================================================
-
--- High-Level Executive Scorecard
+-- 2. EXECUTIVE SCORECARD
 SELECT 
     COUNT(DISTINCT o.order_id) AS total_orders_fulfilled,
     COUNT(DISTINCT o.customer_id) AS total_active_customers,
@@ -126,12 +111,7 @@ SELECT
 FROM orders o
 LEFT JOIN delivery_performance dp ON o.order_id = dp.order_id;
 
-
--- =====================================================================
--- 3. ADVANCED ANALYTICAL ENGINE (CTEs, WINDOW FUNCTIONS & SEGMENTATION)
--- =====================================================================
-
--- I. Category Pareto Analysis (80/20 Rule: Cumulative Revenue Contribution)
+-- 3. PARETO 80/20 CATEGORY REVENUE
 WITH CategoryContribution AS (
     SELECT 
         p.category,
@@ -159,8 +139,7 @@ SELECT
 FROM RankedCategories
 ORDER BY category_revenue DESC;
 
-
--- II. RFM Customer Behavioral Segmentation (Recency, Frequency, Monetary)
+-- 4. RFM CUSTOMER SEGMENTATION
 WITH CustomerRFM_Raw AS (
     SELECT 
         customer_id,
@@ -196,8 +175,7 @@ SELECT
 FROM RFM_Scores
 ORDER BY composite_rfm_score DESC;
 
-
--- III. Dark Store Delivery SLA & Latency Breakdown
+-- 5. DARK STORE SLA COMPLIANCE
 WITH StoreFulfillment AS (
     SELECT 
         o.store_id,
@@ -220,8 +198,7 @@ SELECT
 FROM StoreFulfillment
 ORDER BY sla_breach_rate_pct ASC;
 
-
--- IV. Month-over-Month (MoM) GMV & Order Growth Trajectory
+-- 6. MONTH-OVER-MONTH GMV GROWTH
 WITH MonthlySales AS (
     SELECT 
         DATE_FORMAT(order_date, '%Y-%m') AS sales_month,
@@ -235,39 +212,6 @@ SELECT
     total_orders,
     gmv,
     LAG(gmv, 1) OVER (ORDER BY sales_month) AS prior_month_gmv,
-    ROUND(((gmv - LAG(gmv, 1) OVER (ORDER BY sales_month)) / LAG(gmv, 1) OVER (ORDER BY sales_month)) * 100, 2) AS mom_gmv_growth_pct
+    ROUND(((gmv - LAG(gmv, 1) OVER (ORDER BY sales_month)) / NULLIF(LAG(gmv, 1) OVER (ORDER BY sales_month), 0)) * 100, 2) AS mom_gmv_growth_pct
 FROM MonthlySales
 ORDER BY sales_month;
-
-
--- V. Inventory Shrinkage & Damage Vulnerability Matrix
-SELECT 
-    p.category,
-    p.product_name,
-    SUM(inv.stock_received) AS aggregate_inbound_stock,
-    SUM(inv.damaged_stock) AS aggregate_damaged_units,
-    ROUND((SUM(inv.damaged_stock) * 100.0 / NULLIF(SUM(inv.stock_received), 0)), 2) AS shrinkage_damage_rate_pct,
-    DENSE_RANK() OVER (
-        PARTITION BY p.category 
-        ORDER BY (SUM(inv.damaged_stock) * 100.0 / NULLIF(SUM(inv.stock_received), 0)) DESC
-    ) AS category_vulnerability_rank
-FROM inventory inv
-JOIN products p ON inv.product_id = p.product_id
-GROUP BY p.category, p.product_name
-HAVING aggregate_inbound_stock > 0
-ORDER BY shrinkage_damage_rate_pct DESC;
-
-
--- VI. Marketing Channel Efficiency (CAC vs. ROAS Analysis)
-SELECT 
-    channel,
-    SUM(impressions) AS total_impressions,
-    SUM(clicks) AS total_traffic_clicks,
-    SUM(conversions) AS net_acquisitions,
-    ROUND(SUM(spend), 2) AS gross_ad_spend,
-    ROUND(SUM(revenue_generated), 2) AS attribution_revenue,
-    ROUND(SUM(spend) / NULLIF(SUM(conversions), 0), 2) AS customer_acquisition_cost,
-    ROUND(SUM(revenue_generated) / NULLIF(SUM(spend), 0), 2) AS realized_roas
-FROM marketing_performance
-GROUP BY channel
-ORDER BY realized_roas DESC;
