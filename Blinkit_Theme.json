@@ -1,0 +1,85 @@
+{
+  "name": "Blinkit Premium Dark Theme",
+  "dataColors": [
+    "#0C8346",
+    "#FCBD17",
+    "#F37A20",
+    "#2F80ED",
+    "#9B51E0",
+    "#EF4444",
+    "#FFFFFF",
+    "#828282"
+  ],
+  "background": "#0F0F12",
+  "foreground": "#FFFFFF",
+  "tableAccent": "#0C8346",
+  "visualStyles": {
+    "*": {
+      "*": {
+        "background": [
+          {
+            "show": true,
+            "color": { "solid": { "color": "#121216" } },
+            "transparency": 0
+          }
+        ],
+        "border": [
+          {
+            "show": true,
+            "color": { "solid": { "color": "#0C8346" } },
+            "radius": 12
+          }
+        ],
+        "dropShadow": [
+          {
+            "show": true,
+            "color": { "solid": { "color": "#0C8346" } },
+            "transparency": 70,
+            "preset": "Custom",
+            "direction": "Outer",
+            "angle": 90,
+            "distance": 1,
+            "blur": 8
+          }
+        ],
+        "title": [
+          {
+            "show": true,
+            "fontFamily": "Segoe UI",
+            "fontSize": 12,
+            "fontColor": { "solid": { "color": "#FFFFFF" } },
+            "bold": true
+          }
+        ],
+        "labels": [
+          {
+            "show": true,
+            "fontColor": { "solid": { "color": "#E5E7EB" } }
+          }
+        ],
+        "secLabels": [
+          {
+            "show": true,
+            "fontColor": { "solid": { "color": "#9CA3AF" } }
+          }
+        ]
+      }
+    },
+    "page": {
+      "*": {
+        "background": [
+          {
+            "color": { "solid": { "color": "#0F0F12" } },
+            "transparency": 0
+          }
+        ],
+        "outspace": [
+          {
+            "color": { "solid": { "color": "#0F0F12" } },
+            "transparency": 0
+          }
+        ]
+      }
+    }
+  }
+}
