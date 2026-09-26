@@ -86,4 +86,4 @@ This repository implements an automated Python ETL pipeline, an enterprise SQL a
 ---
 
 ## Author
-Ayush Kumar Dandapat
+Ayush Kumar
