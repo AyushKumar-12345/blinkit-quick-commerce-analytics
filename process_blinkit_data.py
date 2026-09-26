@@ -1,8 +1,6 @@
 """
 Blinkit Quick-Commerce Analytics ETL & Feature Engineering Pipeline
-Author: Ayush Kumar Dandapat
-Description: Automated ingestion, sanitization, temporal parsing, and 
-             business KPI engineering across Blinkit transactional datasets.
+Author: Ayush Kumar
 """
 
 import os
@@ -11,7 +9,6 @@ from typing import Dict
 import pandas as pd
 import numpy as np
 
-# Configure structured enterprise logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -38,7 +35,6 @@ class BlinkitETLPipeline:
         self.working_dir = working_dir
 
     def _sanitize_string_data(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Strip invisible formatting, linebreaks, and edge whitespaces."""
         text_cols = df.select_dtypes(include=['object']).columns
         for col in text_cols:
             df[col] = (
@@ -51,23 +47,18 @@ class BlinkitETLPipeline:
         return df
 
     def _process_orders(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Parse timestamps and compute delivery latency & SLA breach metrics."""
         timestamp_cols = ['order_date', 'promised_delivery_time', 'actual_delivery_time']
         for col in timestamp_cols:
             if col in df.columns:
                 df[col] = pd.to_datetime(df[col], errors='coerce')
 
         if 'promised_delivery_time' in df.columns and 'actual_delivery_time' in df.columns:
-            # Latency variance in minutes
             df['delay_minutes'] = (
                 df['actual_delivery_time'] - df['promised_delivery_time']
             ).dt.total_seconds() / 60.0
-            
-            # Binary SLA breach flag (1 = late delivery, 0 = on-schedule/early)
             df['is_sla_breach'] = (df['delay_minutes'] > 0).astype(int)
 
         if 'order_date' in df.columns and 'actual_delivery_time' in df.columns:
-            # Total turnaround duration in minutes
             df['fulfillment_duration_mins'] = (
                 df['actual_delivery_time'] - df['order_date']
             ).dt.total_seconds() / 60.0
@@ -75,53 +66,44 @@ class BlinkitETLPipeline:
         return df
 
     def _process_delivery(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Normalize incident remarks and standardize delivery logs."""
         if 'reasons_if_delayed' in df.columns:
             df['reasons_if_delayed'] = df['reasons_if_delayed'].fillna('On Time').str.strip().str.title()
         return df
 
     def _process_inventory(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Normalize date schemas and calculate stock deficit flags."""
         if 'date' in df.columns:
             df['date'] = pd.to_datetime(df['date'], format='%d-%m-%Y', errors='coerce')
 
         if 'stock_level' in df.columns and 'reorder_point' in df.columns:
-            # Identify stock depletion risks
             df['stock_deficit'] = df['reorder_point'] - df['stock_level']
             df['is_stockout_risk'] = (df['stock_deficit'] > 0).astype(int)
 
         return df
 
     def _process_generic_dates(self, df: pd.DataFrame, date_col: str) -> pd.DataFrame:
-        """Robust parser for auxiliary date fields."""
         if date_col in df.columns:
             df[date_col] = pd.to_datetime(df[date_col], errors='coerce')
         return df
 
     def run(self) -> None:
-        """Execute full transformation lifecycle."""
         logger.info("Starting Blinkit Grocery Analytics ETL Pipeline execution...")
 
         for raw_filename, clean_filename in self.FILE_MAPPING.items():
             raw_path = os.path.join(self.working_dir, raw_filename)
             clean_path = os.path.join(self.working_dir, clean_filename)
 
-            # Support cases where files are already renamed
             target_source = raw_path if os.path.exists(raw_path) else (
                 clean_path if os.path.exists(clean_path) else None
             )
 
             if not target_source:
-                logger.warning(f"Source file not detected: {raw_filename} / {clean_filename}. Skipping.")
+                logger.warning(f"File not detected: {raw_filename} / {clean_filename}. Skipping.")
                 continue
 
             logger.info(f"Transforming dataset: {os.path.basename(target_source)} -> {clean_filename}")
             df = pd.read_csv(target_source)
-
-            # Stage 1: Text sanitization
             df = self._sanitize_string_data(df)
 
-            # Stage 2: Domain-specific KPI engineering
             if clean_filename == 'Orders.csv':
                 df = self._process_orders(df)
             elif clean_filename == 'Delivery.csv':
@@ -135,7 +117,6 @@ class BlinkitETLPipeline:
             elif clean_filename == 'Feedback.csv':
                 df = self._process_generic_dates(df, 'feedback_date')
 
-            # Stage 3: Deduplication & export
             initial_count = len(df)
             df = df.drop_duplicates()
             dedup_diff = initial_count - len(df)
