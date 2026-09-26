@@ -81,6 +81,7 @@ order_items = datasets["order_items"]
 delivery = datasets["delivery"]
 feedback = datasets["feedback"]
 
+# Sidebar Navigation & Filter Controls
 st.sidebar.title("Blinkit Intelligence")
 st.sidebar.markdown("**Operational Intelligence & Dark Store Telemetry**")
 st.sidebar.markdown("---")
@@ -92,7 +93,18 @@ if not orders.empty and "payment_method" in orders.columns:
         orders = orders[orders["payment_method"] == filter_payment]
 
 st.sidebar.markdown("---")
-st.sidebar.info("Designed by **Ayush Kumar**\nQuick-Commerce Analytics Suite")
+
+# Custom Clean Author Card
+st.sidebar.markdown(
+    """
+    <div style="background-color: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 12px; margin-top: 10px;">
+        <p style="margin: 0; font-size: 0.85rem; color: #94a3b8;">Designed by</p>
+        <p style="margin: 0; font-size: 1.05rem; font-weight: 700; color: #f8cb46;">Ayush Kumar</p>
+        <p style="margin: 4px 0 0 0; font-size: 0.75rem; color: #64748b;">Quick-Commerce Analytics Suite</p>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 st.title("🛒 Blinkit Quick-Commerce Executive Analytics")
 st.caption("Operational Intelligence, Dark Store Telemetry & Unit Economics")
